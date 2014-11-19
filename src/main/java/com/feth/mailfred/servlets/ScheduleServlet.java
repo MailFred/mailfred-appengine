@@ -52,6 +52,7 @@ public class ScheduleServlet extends HttpServlet {
             if (when == null) {
                 throw new IllegalArgumentException("Schedule time must be given in a proper format");
             }
+            final Date scheduleAt = new Date(when);
 
             // processing options block
             final List<String> processingOptions = getTheProcessingOptions(req);
@@ -59,11 +60,12 @@ public class ScheduleServlet extends HttpServlet {
                 throw new IllegalArgumentException("There must be at least one processing option enabled");
             }
 
-
+            log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s",userId, mailId, scheduleAt, processingOptions));
+            
             // data store block
             final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
             final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
-            final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, new Date(when), processingOptions, now);
+            final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
 
             final Transaction txn = ds.beginTransaction();
             try {

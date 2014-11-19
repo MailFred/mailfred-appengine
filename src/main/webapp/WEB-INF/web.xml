@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE web-app PUBLIC
+ "-//Oracle Corporation//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" version="2.5">
+
+    <servlet>
+        <servlet-name>oAuth2CallbackServlet</servlet-name>
+        <servlet-class>com.feth.mailfred.servlets.OAuth2CallbackServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>oAuth2CallbackServlet</servlet-name>
+        <url-pattern>/oauth2callback/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>scheduleServlet</servlet-name>
+        <servlet-class>com.feth.mailfred.servlets.ScheduleServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>scheduleServlet</servlet-name>
+        <url-pattern>/schedule</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>processServlet</servlet-name>
+        <servlet-class>com.feth.mailfred.servlets.ProcessServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>processServlet</servlet-name>
+        <url-pattern>/cron/process</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>setupServlet</servlet-name>
+        <servlet-class>com.feth.mailfred.servlets.SetupServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>setupServlet</servlet-name>
+        <url-pattern>/setup</url-pattern>
+    </servlet-mapping>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>any</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>*</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>cron</web-resource-name>
+            <url-pattern>/cron/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>admin</role-name>
+        </auth-constraint>
+    </security-constraint>
+</web-app>

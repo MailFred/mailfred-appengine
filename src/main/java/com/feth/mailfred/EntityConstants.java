@@ -20,7 +20,6 @@ public abstract class EntityConstants {
 
             public static abstract class ProcessingOptions {
 
-                public static final String UNREAD = "unread";
                 public static final String PROCESS_OPTION_STAR = "starIt";
                 public static final String PROCESS_OPTION_MARK_UNREAD = "markUnread";
                 public static final String PROCESS_OPTION_MOVE_TO_INBOX = "moveToInbox";

@@ -1,7 +1,7 @@
 package com.feth.mailfred.scheduler;
 
 import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
-import com.feth.mailfred.scheduler.exceptions.OutboxLabelWasRemovedException;
+import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -139,7 +139,7 @@ public class Scheduler {
             IOException,
             WasAnsweredButNoAnswerOptionWasGivenException,
             MessageWasNotFoundException,
-            OutboxLabelWasRemovedException {
+            ScheduledLabelWasRemovedException {
 
         final Message messageToBeProcessed = getMessageByMailId(mailId);
         if (messageToBeProcessed == null) {

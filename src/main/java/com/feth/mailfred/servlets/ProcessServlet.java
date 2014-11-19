@@ -3,7 +3,7 @@ package com.feth.mailfred.servlets;
 import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.scheduler.Scheduler;
 import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
-import com.feth.mailfred.scheduler.exceptions.OutboxLabelWasRemovedException;
+import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
 import com.google.appengine.api.datastore.*;
@@ -63,7 +63,7 @@ public class ProcessServlet extends HttpServlet {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ANSWERED);
                 } catch (MessageWasNotFoundException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.NOT_FOUND);
-                } catch (OutboxLabelWasRemovedException e) {
+                } catch (ScheduledLabelWasRemovedException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.OUTBOX_LABEL_REMOVED);
                 } catch(Exception e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ERRORED);

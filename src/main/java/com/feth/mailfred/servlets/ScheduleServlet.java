@@ -38,47 +38,13 @@ public class ScheduleServlet extends HttpServlet {
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
         try {
-            // mail ID block
-            final String mailId = req.getParameter(PARAMETER_MESSAGE_ID);
-            if (!Scheduler.isValidMessageId(mailId)) {
-                throw new IllegalArgumentException(String.format("Given mailId '%s' is not well-formed", mailId));
-            }
-            if (scheduler.getMessageByMailId(mailId) == null) {
-                throw new IllegalArgumentException("Given mailId could not be found");
-            }
+            final String mailId = getMailIdFromRequest(req, scheduler);
+            final Date scheduleAt = getScheduledAtFromRequest(req, now);
+            final List<String> processingOptions = getProcessingOptionsFromRequest(req);
 
-            // date block
-            final Long when = getWhenTheMailShouldBeScheduled(req, now);
-            if (when == null) {
-                throw new IllegalArgumentException("Schedule time must be given in a proper format");
-            }
-            final Date scheduleAt = new Date(when);
+            log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s", userId, mailId, scheduleAt, processingOptions));
 
-            // processing options block
-            final List<String> processingOptions = getTheProcessingOptions(req);
-            if (processingOptions.size() == 0 || (processingOptions.size() == 1 && processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_ONLY_IF_NO_ANSWER))) {
-                throw new IllegalArgumentException("There must be at least one processing option enabled");
-            }
-
-            log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s",userId, mailId, scheduleAt, processingOptions));
-            
-            // data store block
-            final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-            final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
-            final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
-
-            final Transaction txn = ds.beginTransaction();
-            try {
-                markAllPreviouslyScheduledMailsAsCancelled(unprocessedSameScheduledMails, now);
-                unprocessedSameScheduledMails.add(scheduledMail);
-                ds.put(unprocessedSameScheduledMails);
-                scheduler.addSchedulingLabels(mailId);
-                txn.commit();
-            } finally {
-                if (txn.isActive()) {
-                    txn.rollback();
-                }
-            }
+            scheduleMail(now, userId, scheduler, mailId, scheduleAt, processingOptions);
 
             response.put("success", true);
             response.put("error", false);
@@ -87,6 +53,52 @@ public class ScheduleServlet extends HttpServlet {
             response.put("error", e.getMessage());
         }
         response.write(resp.getWriter());
+    }
+
+    private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) {
+        final List<String> processingOptions = getTheProcessingOptions(req);
+        if (processingOptions.size() == 0 || (processingOptions.size() == 1 && processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_ONLY_IF_NO_ANSWER))) {
+            throw new IllegalArgumentException("There must be at least one processing option enabled");
+        }
+        return processingOptions;
+    }
+
+    private Date getScheduledAtFromRequest(HttpServletRequest req, Date now) {
+        final Long when = getWhenTheMailShouldBeScheduled(req, now);
+        if (when == null) {
+            throw new IllegalArgumentException("Schedule time must be given in a proper format");
+        }
+        return new Date(when);
+    }
+
+    private String getMailIdFromRequest(HttpServletRequest req, Scheduler scheduler) throws IOException {
+        final String mailId = req.getParameter(PARAMETER_MESSAGE_ID);
+        if (!Scheduler.isValidMessageId(mailId)) {
+            throw new IllegalArgumentException(String.format("Given mailId '%s' is not well-formed", mailId));
+        }
+        if (scheduler.getMessageByMailId(mailId) == null) {
+            throw new IllegalArgumentException("Given mailId could not be found");
+        }
+        return mailId;
+    }
+
+    private void scheduleMail(Date now, String userId, Scheduler scheduler, String mailId, Date scheduleAt, List<String> processingOptions) throws IOException {
+        final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+        final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
+        final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
+
+        final Transaction txn = ds.beginTransaction();
+        try {
+            markAllPreviouslyScheduledMailsAsCancelled(unprocessedSameScheduledMails, now);
+            unprocessedSameScheduledMails.add(scheduledMail);
+            ds.put(unprocessedSameScheduledMails);
+            scheduler.addSchedulingLabels(mailId);
+            txn.commit();
+        } finally {
+            if (txn.isActive()) {
+                txn.rollback();
+            }
+        }
     }
 
     private Entity createNewScheduledMailEntity(String userId, String mailId, Date scheduledFor, List<String> processingOptions, Date scheduledAt) {

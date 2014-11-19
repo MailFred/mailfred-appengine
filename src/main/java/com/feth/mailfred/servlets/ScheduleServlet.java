@@ -23,6 +23,7 @@ import static com.feth.mailfred.EntityConstants.ScheduledMail.Property;
 public class ScheduleServlet extends HttpServlet {
 
     private static final Logger log = Logger.getLogger(ScheduleServlet.class.getName());
+
     public static final String PARAMETER_WHEN = "when";
     public static final String PARAMETER_WHEN_VALUE_DELTA_PREFIX = "delta:";
     public static final String PARAMETER_MESSAGE_ID = "msgId";
@@ -76,7 +77,7 @@ public class ScheduleServlet extends HttpServlet {
         return new Date(when);
     }
 
-    private String getMailIdFromRequest(HttpServletRequest req, Scheduler scheduler) throws IOException {
+    private String getMailIdFromRequest(final HttpServletRequest req, final Scheduler scheduler) throws IOException {
         final String mailId = req.getParameter(PARAMETER_MESSAGE_ID);
         if (!Scheduler.isValidMessageId(mailId)) {
             throw new IllegalArgumentException(String.format("Given mailId '%s' is not well-formed", mailId));
@@ -97,6 +98,7 @@ public class ScheduleServlet extends HttpServlet {
             markAllPreviouslyScheduledMailsAsCancelled(unprocessedSameScheduledMails, now);
             unprocessedSameScheduledMails.add(scheduledMail);
             ds.put(unprocessedSameScheduledMails);
+
             scheduler.addSchedulingLabels(mailId);
             txn.commit();
         } finally {

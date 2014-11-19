@@ -1,5 +1,6 @@
 package com.feth.mailfred.scheduler;
 
+import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
@@ -12,6 +13,7 @@ import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.ModifyMessageRequest;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -145,20 +147,44 @@ public class Scheduler {
         if (messageToBeProcessed == null) {
             throw new MessageWasNotFoundException();
         }
-        //final boolean wasAnswered = messageToBeProcessed.getThreadId().
+        final boolean stillHasScheduledLabel = messageHasScheduledLabel(messageToBeProcessed);
+        if (!stillHasScheduledLabel) {
+            throw new ScheduledLabelWasRemovedException();
+        }
+
+        if (options.contains(ProcessingOptions.PROCESS_OPTION_ONLY_IF_NO_ANSWER)) {
+            final boolean isLastMessageInThread = isLastMessageInThread(messageToBeProcessed);
+            if (!isLastMessageInThread) {
+                throw new WasAnsweredButNoAnswerOptionWasGivenException();
+            }
+        }
+
+        final List<String> addLabelIds = new ArrayList<String>(4);
+        addLabelIds.add(getBaseLabel().getId());
+        if (options.contains(ProcessingOptions.PROCESS_OPTION_MARK_UNREAD)) {
+            addLabelIds.add(LABEL_ID_UNREAD);
+        }
+        if (options.contains(ProcessingOptions.PROCESS_OPTION_MOVE_TO_INBOX)) {
+            addLabelIds.add(LABEL_ID_INBOX);
+        }
+        if (options.contains(ProcessingOptions.PROCESS_OPTION_STAR)) {
+            addLabelIds.add(LABEL_ID_STARRED);
+        }
 
         final ModifyMessageRequest mmr = new ModifyMessageRequest()
-                .setAddLabelIds(Arrays.asList(
-                        getBaseLabel().getId(),
-                        LABEL_ID_UNREAD,
-                        LABEL_ID_STARRED
-                ))
+                .setAddLabelIds(addLabelIds)
                 .setRemoveLabelIds(Collections.singletonList(getScheduledLabel().getId()));
-        try {
-            final Message message = gmail().users().messages().modify(me(), mailId, mmr).execute();
 
-        } catch (GoogleJsonResponseException e) {
-        // TODO: throw here
-        }
+        gmail().users().messages().modify(me(), mailId, mmr).execute();
+    }
+
+    private boolean isLastMessageInThread(Message message) throws IOException {
+        final com.google.api.services.gmail.model.Thread thread = gmail().users().threads().get(me(), message.getThreadId()).execute();
+        final List<Message> threadMessages = thread.getMessages();
+        return threadMessages.indexOf(message) == threadMessages.size() - 1;
+    }
+
+    private boolean messageHasScheduledLabel(Message message) throws IOException {
+        return message.getLabelIds().contains(getScheduledLabel().getId());
     }
 }

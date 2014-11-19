@@ -1,6 +1,6 @@
 package com.feth.mailfred.servlets;
 
-import com.feth.mailfred.EntityDefintions;
+import com.feth.mailfred.Entity;
 import com.feth.mailfred.Scheduler;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.Filter;
@@ -13,14 +13,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static com.feth.mailfred.EntityDefintions.ScheduledMail.Properties;
+import static com.feth.mailfred.Entity.ScheduledMail.Property;
 
 public class ProcessServlet extends HttpServlet {
 
     private static final Logger log = Logger.getLogger(ProcessServlet.class.getName());
 
     private static final Filter unprocessedFilter = new Query.FilterPredicate(
-            EntityDefintions.ScheduledMail.Properties.HAS_BEEN_PROCESSED,
+            Property.HAS_BEEN_PROCESSED,
             Query.FilterOperator.EQUAL,
             false
     );
@@ -32,7 +32,7 @@ public class ProcessServlet extends HttpServlet {
         log.info("Processing");
 
         final Filter beforeNowFilter = new Query.FilterPredicate(
-                EntityDefintions.ScheduledMail.Properties.SCHEDULED_FOR,
+                Property.SCHEDULED_FOR,
                 Query.FilterOperator.LESS_THAN_OR_EQUAL,
                 new Date()
         );
@@ -40,15 +40,15 @@ public class ProcessServlet extends HttpServlet {
         final Filter beforeNowAndUnprocessedFilter =
                 Query.CompositeFilterOperator.and(beforeNowFilter, unprocessedFilter);
 
-        final Query q = new Query(EntityDefintions.ScheduledMail.NAME)
+        final Query q = new Query(Entity.ScheduledMail.NAME)
                 .setFilter(beforeNowAndUnprocessedFilter);
 
         // Use PreparedQuery interface to retrieve results
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
         final PreparedQuery pq = ds.prepare(q);
-        for (final Entity scheduledMail : pq.asIterable()) {
-            final String mailId = (String) scheduledMail.getProperty(Properties.MAIL_ID);
-            final String userId = (String) scheduledMail.getProperty(Properties.USER_ID);
+        for (final com.google.appengine.api.datastore.Entity scheduledMail : pq.asIterable()) {
+            final String mailId = (String) scheduledMail.getProperty(Property.MAIL_ID);
+            final String userId = (String) scheduledMail.getProperty(Property.USER_ID);
             log.info(String.format(
                     "Processing mail with ID %s for user %s",
                     mailId,
@@ -56,11 +56,11 @@ public class ProcessServlet extends HttpServlet {
             ));
 
             @SuppressWarnings("unchecked")
-            final List<String> actions = (List<String>) scheduledMail.getProperty(Properties.ACTIONS);
+            final List<String> actions = (List<String>) scheduledMail.getProperty(Property.ACTIONS);
             final Scheduler s = new Scheduler(userId);
             if (s.process(mailId, actions)) {
-                scheduledMail.setProperty(Properties.HAS_BEEN_PROCESSED, true);
-                scheduledMail.setProperty(Properties.PROCESSED_AT, new Date());
+                scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, true);
+                scheduledMail.setProperty(Property.PROCESSED_AT, new Date());
                 ds.put(scheduledMail);
             }
         }

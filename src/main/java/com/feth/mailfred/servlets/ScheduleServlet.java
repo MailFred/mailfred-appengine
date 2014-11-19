@@ -1,11 +1,10 @@
 package com.feth.mailfred.servlets;
 
 
-import com.feth.mailfred.EntityDefintions;
+import com.feth.mailfred.Entity;
 import com.feth.mailfred.Scheduler;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.users.UserServiceFactory;
 
 import javax.servlet.http.HttpServlet;
@@ -15,6 +14,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.logging.Logger;
+
+import static com.feth.mailfred.Entity.ScheduledMail.Property;
 
 
 public class ScheduleServlet extends HttpServlet {
@@ -41,17 +42,17 @@ public class ScheduleServlet extends HttpServlet {
 
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 
-        final Entity scheduledMail = new Entity(EntityDefintions.ScheduledMail.NAME);
+        final com.google.appengine.api.datastore.Entity scheduledMail = new com.google.appengine.api.datastore.Entity(Entity.ScheduledMail.NAME);
 
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.USER_ID, userId);
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.MAIL_ID, mailId);
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.SCHEDULED_AT, new Date());
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.SCHEDULED_FOR, new Date(when));
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.PROCESSED_AT, null);
-        scheduledMail.setProperty(EntityDefintions.ScheduledMail.Properties.HAS_BEEN_PROCESSED, false);
-        scheduledMail.setUnindexedProperty(EntityDefintions.ScheduledMail.Properties.ACTIONS,
+        scheduledMail.setProperty(Property.USER_ID, userId);
+        scheduledMail.setProperty(Property.MAIL_ID, mailId);
+        scheduledMail.setProperty(Property.SCHEDULED_AT, new Date());
+        scheduledMail.setProperty(Property.SCHEDULED_FOR, new Date(when));
+        scheduledMail.setProperty(Property.PROCESSED_AT, null);
+        scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, false);
+        scheduledMail.setUnindexedProperty(Property.ACTIONS,
                 Arrays.asList(
-                        EntityDefintions.ScheduledMail.Properties.ACTION_PROPERTY_VALUE_UNREAD
+                        Property.Actions.UNREAD
                 )
         );
         ds.put(scheduledMail);

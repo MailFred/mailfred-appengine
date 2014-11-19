@@ -63,6 +63,11 @@
             <artifactId>google-api-services-gmail</artifactId>
             <version>v1-rev15-1.19.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20140107</version>
+        </dependency>
 
 
 

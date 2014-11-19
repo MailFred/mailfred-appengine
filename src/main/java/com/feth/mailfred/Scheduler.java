@@ -47,7 +47,7 @@ public class Scheduler {
         return labelCache;
     }
 
-    public boolean schedule(final String mailId) throws IOException {
+    public boolean addSchedulingLabels(final String mailId) throws IOException {
         final ModifyMessageRequest mmr = new ModifyMessageRequest().setAddLabelIds(
                 Arrays.asList(
                         getBaseLabel().getId(),
@@ -66,11 +66,6 @@ public class Scheduler {
     }
 
     public Message getMessageByMailId(final String mailId) throws IOException {
-
-        if (!isValidMessageId(mailId)) {
-            log.info(String.format("Given mailId '%s' is not well-formed", mailId));
-            return null;
-        }
         Message message = null;
 
         try {
@@ -86,12 +81,19 @@ public class Scheduler {
         return message;
     }
 
-    private boolean isValidMessageId(final String mailId) {
+    /**
+     * Whether a given message ID has the correct format
+     *
+     * @param mailId a GMail message ID (a hexadecimal number with 16 digits)
+     * @return whether the given message ID is valid (in a sense of format) or not
+     */
+    public static boolean isValidMessageId(final String mailId) {
         if (mailId == null || mailId.length() != 16) {
             return false;
         }
         try {
-            Long.parseLong(mailId, 16);
+            @SuppressWarnings("unused")
+            final Long n = Long.parseLong(mailId, 16);
         } catch (NumberFormatException nfe) {
             return false;
         }

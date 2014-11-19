@@ -93,7 +93,9 @@ public class ScheduleServlet extends HttpServlet {
         final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
         final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
 
-        final Transaction txn = ds.beginTransaction();
+        final TransactionOptions options = TransactionOptions.Builder.withXG(true);
+        final Transaction txn = ds.beginTransaction(options);
+
         try {
             markAllPreviouslyScheduledMailsAsCancelled(unprocessedSameScheduledMails, now);
             unprocessedSameScheduledMails.add(scheduledMail);

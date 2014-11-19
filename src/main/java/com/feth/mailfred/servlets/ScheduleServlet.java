@@ -3,6 +3,7 @@ package com.feth.mailfred.servlets;
 
 import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.scheduler.Scheduler;
+import com.feth.mailfred.util.Utils;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
@@ -50,7 +51,11 @@ public class ScheduleServlet extends HttpServlet {
             response.put("error", false);
         } catch (final Exception e) {
             response.put("success", false);
-            response.put("error", e.getMessage());
+            log.severe(e.getMessage());
+            if (Utils.isDev()) {
+                e.printStackTrace();
+            }
+            response.put("error", "Something went wrong");
         }
         response.write(resp.getWriter());
     }

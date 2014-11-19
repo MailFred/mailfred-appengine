@@ -29,9 +29,15 @@ public class ScheduleServlet extends HttpServlet {
     public static final String PARAMETER_WHEN_VALUE_DELTA_PREFIX = "delta:";
     public static final String PARAMETER_MESSAGE_ID = "msgId";
 
+    @Override
+    public void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+        if (Utils.isDev()) {
+            doPost(req, resp);
+        }
+    }
 
     @Override
-    public void doGet(HttpServletRequest req, HttpServletResponse resp)
+    public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
             throws IOException {
 
         final Date now = new Date();
@@ -64,7 +70,7 @@ public class ScheduleServlet extends HttpServlet {
 
     private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) {
         final List<String> processingOptions = getTheProcessingOptions(req);
-        if (    !processingOptions.contains(ProcessingOptions.MARK_UNREAD) &&
+        if (!processingOptions.contains(ProcessingOptions.MARK_UNREAD) &&
                 !processingOptions.contains(ProcessingOptions.MOVE_TO_INBOX) &&
                 !processingOptions.contains(ProcessingOptions.STAR)
                 ) {

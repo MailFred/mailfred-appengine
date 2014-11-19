@@ -38,8 +38,9 @@ public class ProcessServlet extends HttpServlet {
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 
         final Iterable<Entity> toBeProcessedScheduledMails = getToBeProcessedScheduledMails(ds, processingRunStart);
+        int processed = 0;
         for (final Entity scheduledMail : toBeProcessedScheduledMails) {
-
+            processed++;
             try {
                 final String mailId = (String) scheduledMail.getProperty(Property.MAIL_ID);
                 final String userId = (String) scheduledMail.getProperty(Property.USER_ID);
@@ -79,8 +80,8 @@ public class ProcessServlet extends HttpServlet {
                     e.printStackTrace();
                 }
             }
-
         }
+        log.info(String.format("Processed %d mails",processed));
         log.exiting(ProcessServlet.class.getName(), "doGet");
     }
 

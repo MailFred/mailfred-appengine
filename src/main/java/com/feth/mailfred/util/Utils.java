@@ -12,22 +12,13 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.appengine.api.utils.SystemProperty;
-import com.google.appengine.repackaged.org.joda.time.DateTimeZone;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
-import java.util.TimeZone;
 
 public class Utils {
-
-    static {
-        if (isDev()) {
-            TimeZone.setDefault(DateTimeZone.UTC.toTimeZone());
-            DateTimeZone.setDefault(DateTimeZone.UTC);
-        }
-    }
 
     private static final AppEngineDataStoreFactory DATA_STORE_FACTORY =
             AppEngineDataStoreFactory.getDefaultInstance();

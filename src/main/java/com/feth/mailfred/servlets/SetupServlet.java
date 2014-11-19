@@ -4,6 +4,7 @@ import com.feth.mailfred.util.Utils;
 import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
 import com.google.api.client.extensions.appengine.auth.oauth2.AbstractAppEngineAuthorizationCodeServlet;
 import com.google.appengine.api.users.UserServiceFactory;
+import org.json.JSONObject;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +16,10 @@ public class SetupServlet extends AbstractAppEngineAuthorizationCodeServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        // do stuff
+        response.setContentType("application/json");
+        final JSONObject obj = new JSONObject();
+        obj.put("authorized", true);
+        obj.write(response.getWriter());
     }
 
     @Override

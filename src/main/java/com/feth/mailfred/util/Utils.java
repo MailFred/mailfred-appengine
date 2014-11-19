@@ -23,7 +23,7 @@ import java.util.TimeZone;
 public class Utils {
 
     static {
-        if(isDev()) {
+        if (isDev()) {
             TimeZone.setDefault(DateTimeZone.UTC.toTimeZone());
             DateTimeZone.setDefault(DateTimeZone.UTC);
         }
@@ -62,7 +62,7 @@ public class Utils {
 
     public static Gmail loadGmailClient(final String userId) throws IOException {
         final HttpRequestInitializer credential;
-        if(isDev()) {
+        if (isDev()) {
             credential = newFlow(userId).loadCredential(userId);
         } else {
             credential =

@@ -48,7 +48,7 @@ public class ProcessServlet extends HttpServlet {
         final PreparedQuery pq = ds.prepare(q);
         for (final Entity scheduledMail : pq.asIterable()) {
             final String mailId = (String) scheduledMail.getProperty(Properties.MAIL_ID);
-final String userId = (String) scheduledMail.getProperty(Properties.USER_ID);
+            final String userId = (String) scheduledMail.getProperty(Properties.USER_ID);
             log.info(String.format(
                     "Processing mail with ID %s for user %s",
                     mailId,

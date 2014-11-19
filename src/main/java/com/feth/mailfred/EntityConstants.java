@@ -20,17 +20,18 @@ public abstract class EntityConstants {
 
             public static abstract class ProcessingOptions {
 
-                public static final String PROCESS_OPTION_STAR = "starIt";
-                public static final String PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING = "archiveAfterScheduling";
-                public static final String PROCESS_OPTION_MARK_UNREAD = "markUnread";
-                public static final String PROCESS_OPTION_MOVE_TO_INBOX = "moveToInbox";
-                public static final String PROCESS_OPTION_ONLY_IF_NO_ANSWER = "onlyIfNoAnswer";
+                public static final String STAR = "starIt";
+                public static final String ARCHIVE_AFTER_SCHEDULING = "archiveAfterScheduling";
+                public static final String MARK_UNREAD = "markUnread";
+                public static final String MOVE_TO_INBOX = "moveToInbox";
+                public static final String ONLY_IF_NO_ANSWER = "onlyIfNoAnswer";
+
                 public static final String[] VALID_PROCESS_OPTION_KEYS = {
-                        PROCESS_OPTION_STAR,
-                        PROCESS_OPTION_MARK_UNREAD,
-                        PROCESS_OPTION_MOVE_TO_INBOX,
-                        PROCESS_OPTION_ONLY_IF_NO_ANSWER,
-                        PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING
+                        STAR,
+                        MARK_UNREAD,
+                        MOVE_TO_INBOX,
+                        ONLY_IF_NO_ANSWER,
+                        ARCHIVE_AFTER_SCHEDULING
                 };
             }
 
@@ -40,7 +41,7 @@ public abstract class EntityConstants {
                 public static final String CANCELED = "canceled";
                 public static final String OUTBOX_LABEL_REMOVED = "labelRemoved";
                 public static final String PROCESSED_CORRECTLY = "ok";
-                public static final String ERRORED = "error";
+                public static final String ERROR = "error";
             }
         }
     }

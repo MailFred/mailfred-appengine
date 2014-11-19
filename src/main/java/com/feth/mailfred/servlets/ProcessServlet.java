@@ -67,7 +67,7 @@ public class ProcessServlet extends HttpServlet {
                 } catch (ScheduledLabelWasRemovedException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.OUTBOX_LABEL_REMOVED);
                 } catch(Exception e) {
-                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ERRORED);
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ERROR);
                 } finally {
                     scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, true);
                     scheduledMail.setProperty(Property.PROCESSED_AT, now);

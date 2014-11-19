@@ -148,7 +148,7 @@ public class Scheduler {
             throw new ScheduledLabelWasRemovedException();
         }
 
-        if (options.contains(ProcessingOptions.PROCESS_OPTION_ONLY_IF_NO_ANSWER)) {
+        if (options.contains(ProcessingOptions.ONLY_IF_NO_ANSWER)) {
             final boolean isLastMessageInThread = isLastMessageInThread(messageToBeProcessed);
             if (!isLastMessageInThread) {
                 throw new WasAnsweredButNoAnswerOptionWasGivenException();
@@ -157,13 +157,13 @@ public class Scheduler {
 
         final List<String> addLabelIds = new ArrayList<String>(4);
         addLabelIds.add(getBaseLabel().getId());
-        if (options.contains(ProcessingOptions.PROCESS_OPTION_MARK_UNREAD)) {
+        if (options.contains(ProcessingOptions.MARK_UNREAD)) {
             addLabelIds.add(LABEL_ID_UNREAD);
         }
-        if (options.contains(ProcessingOptions.PROCESS_OPTION_MOVE_TO_INBOX)) {
+        if (options.contains(ProcessingOptions.MOVE_TO_INBOX)) {
             addLabelIds.add(LABEL_ID_INBOX);
         }
-        if (options.contains(ProcessingOptions.PROCESS_OPTION_STAR)) {
+        if (options.contains(ProcessingOptions.STAR)) {
             addLabelIds.add(LABEL_ID_STARRED);
         }
 

@@ -2,6 +2,7 @@ package com.feth.mailfred.servlets;
 
 
 import com.feth.mailfred.EntityConstants;
+import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.scheduler.Scheduler;
 import com.feth.mailfred.util.Utils;
 import com.google.appengine.api.datastore.*;
@@ -63,9 +64,9 @@ public class ScheduleServlet extends HttpServlet {
 
     private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) {
         final List<String> processingOptions = getTheProcessingOptions(req);
-        if (    !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_MARK_UNREAD) &&
-                !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_MOVE_TO_INBOX) &&
-                !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_STAR)
+        if (    !processingOptions.contains(ProcessingOptions.MARK_UNREAD) &&
+                !processingOptions.contains(ProcessingOptions.MOVE_TO_INBOX) &&
+                !processingOptions.contains(ProcessingOptions.STAR)
                 ) {
             throw new IllegalArgumentException("There must be at least one processing option enabled");
         }
@@ -104,7 +105,7 @@ public class ScheduleServlet extends HttpServlet {
             unprocessedSameScheduledMails.add(scheduledMail);
             ds.put(unprocessedSameScheduledMails);
 
-            final boolean archive = processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING);
+            final boolean archive = processingOptions.contains(ProcessingOptions.ARCHIVE_AFTER_SCHEDULING);
             scheduler.schedule(mailId, archive);
             txn.commit();
         } finally {
@@ -164,7 +165,7 @@ public class ScheduleServlet extends HttpServlet {
 
     private List<String> getTheProcessingOptions(final HttpServletRequest req) {
         final List<String> options = new ArrayList<String>(2);
-        for (final String key : Property.ProcessingOptions.VALID_PROCESS_OPTION_KEYS) {
+        for (final String key : ProcessingOptions.VALID_PROCESS_OPTION_KEYS) {
             if ("true".equals(req.getParameter(key))) {
                 options.add(key);
             }

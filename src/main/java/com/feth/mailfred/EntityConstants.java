@@ -21,14 +21,16 @@ public abstract class EntityConstants {
             public static abstract class ProcessingOptions {
 
                 public static final String PROCESS_OPTION_STAR = "starIt";
+                public static final String PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING = "archiveAfterScheduling";
                 public static final String PROCESS_OPTION_MARK_UNREAD = "markUnread";
                 public static final String PROCESS_OPTION_MOVE_TO_INBOX = "moveToInbox";
                 public static final String PROCESS_OPTION_ONLY_IF_NO_ANSWER = "onlyIfNoAnswer";
-                public static final String[] PROCESS_OPTION_KEYS = {
+                public static final String[] VALID_PROCESS_OPTION_KEYS = {
                         PROCESS_OPTION_STAR,
                         PROCESS_OPTION_MARK_UNREAD,
                         PROCESS_OPTION_MOVE_TO_INBOX,
-                        PROCESS_OPTION_ONLY_IF_NO_ANSWER
+                        PROCESS_OPTION_ONLY_IF_NO_ANSWER,
+                        PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING
                 };
             }
 

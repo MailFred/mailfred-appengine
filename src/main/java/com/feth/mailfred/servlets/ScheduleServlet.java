@@ -63,7 +63,10 @@ public class ScheduleServlet extends HttpServlet {
 
     private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) {
         final List<String> processingOptions = getTheProcessingOptions(req);
-        if (processingOptions.size() == 0 || (processingOptions.size() == 1 && processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_ONLY_IF_NO_ANSWER))) {
+        if (    !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_MARK_UNREAD) &&
+                !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_MOVE_TO_INBOX) &&
+                !processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_STAR)
+                ) {
             throw new IllegalArgumentException("There must be at least one processing option enabled");
         }
         return processingOptions;
@@ -101,7 +104,8 @@ public class ScheduleServlet extends HttpServlet {
             unprocessedSameScheduledMails.add(scheduledMail);
             ds.put(unprocessedSameScheduledMails);
 
-            scheduler.addSchedulingLabels(mailId);
+            final boolean archive = processingOptions.contains(Property.ProcessingOptions.PROCESS_OPTION_ARCHIVE_AFTER_SCHEDULING);
+            scheduler.schedule(mailId, archive);
             txn.commit();
         } finally {
             if (txn.isActive()) {
@@ -160,7 +164,7 @@ public class ScheduleServlet extends HttpServlet {
 
     private List<String> getTheProcessingOptions(final HttpServletRequest req) {
         final List<String> options = new ArrayList<String>(2);
-        for (final String key : Property.ProcessingOptions.PROCESS_OPTION_KEYS) {
+        for (final String key : Property.ProcessingOptions.VALID_PROCESS_OPTION_KEYS) {
             if ("true".equals(req.getParameter(key))) {
                 options.add(key);
             }

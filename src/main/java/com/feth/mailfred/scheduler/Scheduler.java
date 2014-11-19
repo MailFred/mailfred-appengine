@@ -53,22 +53,18 @@ public class Scheduler {
         return labelCache;
     }
 
-    public boolean addSchedulingLabels(final String mailId) throws IOException {
+    public void schedule(final String mailId, boolean archive) throws IOException {
         final ModifyMessageRequest mmr = new ModifyMessageRequest().setAddLabelIds(
                 Arrays.asList(
                         getBaseLabel().getId(),
                         getScheduledLabel().getId()
                 )
         );
-
-        try {
-            final Message message = gmail().users().messages().modify(me(), mailId, mmr).execute();
-
-        } catch (GoogleJsonResponseException e) {
-            return false;
+        if (archive) {
+            mmr.setRemoveLabelIds(Collections.singletonList(LABEL_ID_INBOX));
         }
 
-        return true;
+        gmail().users().messages().modify(me(), mailId, mmr).execute();
     }
 
     public Message getMessageByMailId(final String mailId) throws IOException {

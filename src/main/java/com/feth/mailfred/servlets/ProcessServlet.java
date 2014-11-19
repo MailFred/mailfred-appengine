@@ -1,11 +1,12 @@
 package com.feth.mailfred.servlets;
 
 import com.feth.mailfred.EntityConstants;
-import com.feth.mailfred.Scheduler;
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.PreparedQuery;
-import com.google.appengine.api.datastore.Query;
+import com.feth.mailfred.scheduler.Scheduler;
+import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
+import com.feth.mailfred.scheduler.exceptions.OutboxLabelWasRemovedException;
+import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
+import com.feth.mailfred.util.Utils;
+import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.Filter;
 
 import javax.servlet.http.HttpServlet;
@@ -31,45 +32,72 @@ public class ProcessServlet extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
+        log.entering(ProcessServlet.class.getName(), "doGet");
 
-        log.info("Processing");
+        final Date processingRunStart = new Date();
+        final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 
+        final Iterable<Entity> toBeProcessedScheduledMails = getToBeProcessedScheduledMails(ds, processingRunStart);
+        for (final Entity scheduledMail : toBeProcessedScheduledMails) {
+
+            try {
+                final String mailId = (String) scheduledMail.getProperty(Property.MAIL_ID);
+                final String userId = (String) scheduledMail.getProperty(Property.USER_ID);
+                @SuppressWarnings("unchecked")
+                final List<String> processingOptions = (List<String>) scheduledMail.getProperty(Property.PROCESSING_OPTIONS);
+
+                log.info(String.format(
+                        "Starting processing mail with ID %s for user %s with options %s",
+                        mailId,
+                        userId,
+                        processingOptions
+                ));
+
+
+                final Scheduler s = new Scheduler(userId);
+                final Date now = new Date();
+                try {
+                    s.process(mailId, processingOptions);
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.PROCESSED_CORRECTLY);
+                } catch (WasAnsweredButNoAnswerOptionWasGivenException e) {
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ANSWERED);
+                } catch (MessageWasNotFoundException e) {
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.NOT_FOUND);
+                } catch (OutboxLabelWasRemovedException e) {
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.OUTBOX_LABEL_REMOVED);
+                } catch(Exception e) {
+                    scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ERRORED);
+                } finally {
+                    scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, true);
+                    scheduledMail.setProperty(Property.PROCESSED_AT, now);
+                }
+                ds.put(scheduledMail);
+            } catch (final Exception e) {
+                // if there is a problem with one mail, we don't want the others to be affected
+                log.severe(e.getMessage());
+                if (Utils.isDev()) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        log.exiting(ProcessServlet.class.getName(), "doGet");
+    }
+
+    private Iterable<Entity> getToBeProcessedScheduledMails(DatastoreService ds, Date processingRunStart) {
         final Filter scheduledForNowOrThePastFilter = new Query.FilterPredicate(
                 Property.SCHEDULED_FOR,
                 Query.FilterOperator.LESS_THAN_OR_EQUAL,
-                new Date()
+                processingRunStart
         );
 
-        final Filter beforeNowAndUnprocessedFilter = Query.CompositeFilterOperator.and(
+        final Filter scheduledForNowOrThePastAndUnprocessedFilter = Query.CompositeFilterOperator.and(
                 scheduledForNowOrThePastFilter,
                 UNPROCESSED_SCHEDULED_MAIL_FILTER
         );
 
-        final Query q = new Query(EntityConstants.ScheduledMail.NAME)
-                .setFilter(beforeNowAndUnprocessedFilter);
-
-        // Use PreparedQuery interface to retrieve results
-        final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+        final Query q = new Query(EntityConstants.ScheduledMail.NAME).setFilter(scheduledForNowOrThePastAndUnprocessedFilter);
         final PreparedQuery pq = ds.prepare(q);
-        for (final com.google.appengine.api.datastore.Entity scheduledMail : pq.asIterable()) {
-            final String mailId = (String) scheduledMail.getProperty(Property.MAIL_ID);
-            final String userId = (String) scheduledMail.getProperty(Property.USER_ID);
-            log.info(String.format(
-                    "Processing mail with ID %s for user %s",
-                    mailId,
-                    userId
-            ));
-
-            @SuppressWarnings("unchecked")
-            final List<String> actions = (List<String>) scheduledMail.getProperty(Property.PROCESSING_OPTIONS);
-            final Scheduler s = new Scheduler(userId);
-            if (s.process(mailId, actions)) {
-                scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, true);
-                scheduledMail.setProperty(Property.PROCESSED_AT, new Date());
-                // TODO set process status correctly
-                scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.PROCESSED_CORRECTLY);
-                ds.put(scheduledMail);
-            }
-        }
+        return pq.asIterable();
     }
 }

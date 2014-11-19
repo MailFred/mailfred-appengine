@@ -39,6 +39,7 @@ public abstract class EntityConstants {
                 public static final String CANCELED = "canceled";
                 public static final String OUTBOX_LABEL_REMOVED = "labelRemoved";
                 public static final String PROCESSED_CORRECTLY = "ok";
+                public static final String ERRORED = "error";
             }
         }
     }

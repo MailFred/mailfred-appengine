@@ -1,5 +1,8 @@
-package com.feth.mailfred;
+package com.feth.mailfred.scheduler;
 
+import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
+import com.feth.mailfred.scheduler.exceptions.OutboxLabelWasRemovedException;
+import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.gmail.Gmail;
@@ -22,6 +25,7 @@ public class Scheduler {
     private static final String SCHEDULED_LABEL = "MailFred/Scheduled";
     public static final String LABEL_ID_UNREAD = "UNREAD";
     public static final String LABEL_ID_STARRED = "STARRED";
+    public static final String LABEL_ID_INBOX = "INBOX";
 
     final private Gmail gmail;
 
@@ -131,7 +135,17 @@ public class Scheduler {
         return newLabel;
     }
 
-    public boolean process(final String mailId, final List<String> actions) throws IOException {
+    public void process(final String mailId, final List<String> options) throws
+            IOException,
+            WasAnsweredButNoAnswerOptionWasGivenException,
+            MessageWasNotFoundException,
+            OutboxLabelWasRemovedException {
+
+        final Message messageToBeProcessed = getMessageByMailId(mailId);
+        if (messageToBeProcessed == null) {
+            throw new MessageWasNotFoundException();
+        }
+        //final boolean wasAnswered = messageToBeProcessed.getThreadId().
 
         final ModifyMessageRequest mmr = new ModifyMessageRequest()
                 .setAddLabelIds(Arrays.asList(
@@ -144,8 +158,7 @@ public class Scheduler {
             final Message message = gmail().users().messages().modify(me(), mailId, mmr).execute();
 
         } catch (GoogleJsonResponseException e) {
-            return false;
+        // TODO: throw here
         }
-        return true;
     }
 }

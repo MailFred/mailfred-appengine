@@ -2,7 +2,7 @@ package com.feth.mailfred.servlets;
 
 
 import com.feth.mailfred.EntityConstants;
-import com.feth.mailfred.Scheduler;
+import com.feth.mailfred.scheduler.Scheduler;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;

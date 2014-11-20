@@ -9,6 +9,7 @@ import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,6 +31,11 @@ public class ScheduleServlet extends HttpServlet {
     public static final String PARAMETER_MESSAGE_ID = "msgId";
 
     @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.addHeader("Access-Control-Allow-Origin", "*");
+    }
+
+    @Override
     public void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
         if (Utils.isDev()) {
             doPost(req, resp);
@@ -44,7 +50,7 @@ public class ScheduleServlet extends HttpServlet {
         final String userId = UserServiceFactory.getUserService().getCurrentUser().getUserId();
         final Scheduler scheduler = new Scheduler(userId);
 
-        resp.setHeader("Access-Control-Allow-Origin", "*");
+        resp.addHeader("Access-Control-Allow-Origin", "*");
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
         try {

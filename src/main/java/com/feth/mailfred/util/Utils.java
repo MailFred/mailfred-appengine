@@ -53,7 +53,7 @@ public class Utils {
 
     public static Gmail loadGmailClient(final String userId) throws IOException {
         final HttpRequestInitializer credential;
-        if (isDev()) {
+        if (isDev() || true) {
             credential = newFlow(userId).loadCredential(userId);
         } else {
             credential =

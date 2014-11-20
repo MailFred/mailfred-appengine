@@ -44,6 +44,7 @@ public class ScheduleServlet extends HttpServlet {
         final String userId = UserServiceFactory.getUserService().getCurrentUser().getUserId();
         final Scheduler scheduler = new Scheduler(userId);
 
+        resp.setHeader("Access-Control-Allow-Origin", "*");
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
         try {

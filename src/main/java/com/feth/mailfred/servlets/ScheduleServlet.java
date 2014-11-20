@@ -49,6 +49,7 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     private void schedule(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        log.entering(ScheduleServlet.class.getName(), "schedule");
         final Date now = new Date();
         final String userId = UserServiceFactory.getUserService().getCurrentUser().getUserId();
         final Scheduler scheduler = new Scheduler(userId);
@@ -57,8 +58,13 @@ public class ScheduleServlet extends HttpServlet {
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
         try {
+            log.info("Getting mailId from the request");
             final String mailId = getMailIdFromRequest(req, scheduler);
+
+            log.info("Getting schedule date from the request");
             final Date scheduleAt = getScheduledAtFromRequest(req, now);
+
+            log.info("Getting processing options from the request");
             final List<String> processingOptions = getProcessingOptionsFromRequest(req);
 
             log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s", userId, mailId, scheduleAt, processingOptions));
@@ -70,9 +76,7 @@ public class ScheduleServlet extends HttpServlet {
         } catch (final Exception e) {
             response.put("success", false);
             log.severe(e.getMessage());
-            if (Utils.isDev()) {
-                e.printStackTrace();
-            }
+            e.printStackTrace();
             response.put("error", "Something went wrong");
         }
         response.write(resp.getWriter());

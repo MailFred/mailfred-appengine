@@ -37,15 +37,18 @@ public class ScheduleServlet extends HttpServlet {
 
     @Override
     public void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-        if (Utils.isDev()) {
-            doPost(req, resp);
-        }
+
+        schedule(req, resp);
     }
 
     @Override
     public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
             throws IOException {
 
+        schedule(req, resp);
+    }
+
+    private void schedule(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         final Date now = new Date();
         final String userId = UserServiceFactory.getUserService().getCurrentUser().getUserId();
         final Scheduler scheduler = new Scheduler(userId);

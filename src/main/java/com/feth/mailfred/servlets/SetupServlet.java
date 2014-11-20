@@ -16,7 +16,7 @@ public class SetupServlet extends AbstractAppEngineAuthorizationCodeServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Origin", "*");
         response.setContentType("application/json");
         final JSONObject obj = new JSONObject();
         obj.put("authorized", true);

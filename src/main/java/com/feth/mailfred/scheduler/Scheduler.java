@@ -47,7 +47,9 @@ public class Scheduler {
 
     private List<Label> getLabels() throws IOException {
         if (labelCache == null) {
-            final ListLabelsResponse response = gmail().users().labels().list(me()).execute();
+            final ListLabelsResponse response = gmail().users().labels().list(me())
+
+                    .execute();
             labelCache = response.getLabels();
         }
         return labelCache;
@@ -64,23 +66,15 @@ public class Scheduler {
             mmr.setRemoveLabelIds(Collections.singletonList(LABEL_ID_INBOX));
         }
 
-        gmail().users().messages().modify(me(), mailId, mmr).execute();
+        gmail().users().messages().modify(me(), mailId, mmr)
+
+                .execute();
     }
 
     public Message getMessageByMailId(final String mailId) throws IOException {
-        Message message = null;
+        return gmail().users().messages().get(me(), mailId)
 
-        try {
-            message = gmail().users().messages().get(me(), mailId).execute();
-        } catch (final GoogleJsonResponseException e) {
-            if (!(e.getDetails().getCode() == 400 && e.getDetails().getErrors().get(0).getReason().equals("invalidArgument"))) {
-                // some other error, rethrow
-                e.printStackTrace();
-                return null;
-            }
-            // message ID not found, it's alright, we just didn't find it
-        }
-        return message;
+                .execute();
     }
 
     /**
@@ -126,7 +120,9 @@ public class Scheduler {
         newBaseLabel.setLabelListVisibility("labelHide");
         newBaseLabel.setMessageListVisibility("show");
         newBaseLabel.setName(name);
-        final Label newLabel = gmail().users().labels().create(me(), newBaseLabel).execute();
+        final Label newLabel = gmail().users().labels().create(me(), newBaseLabel)
+
+                .execute();
         if (labelCache != null) {
             labelCache.add(0, newLabel);
         }
@@ -171,11 +167,15 @@ public class Scheduler {
                 .setAddLabelIds(addLabelIds)
                 .setRemoveLabelIds(Collections.singletonList(getScheduledLabel().getId()));
 
-        gmail().users().messages().modify(me(), mailId, mmr).execute();
+        gmail().users().messages().modify(me(), mailId, mmr)
+
+                .execute();
     }
 
     private boolean isLastMessageInThread(Message message) throws IOException {
-        final com.google.api.services.gmail.model.Thread thread = gmail().users().threads().get(me(), message.getThreadId()).execute();
+        final com.google.api.services.gmail.model.Thread thread = gmail().users().threads().get(me(), message.getThreadId())
+
+                .execute();
         final List<Message> threadMessages = thread.getMessages();
         return threadMessages.indexOf(message) == threadMessages.size() - 1;
     }

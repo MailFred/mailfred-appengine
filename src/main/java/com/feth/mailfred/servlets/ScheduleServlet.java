@@ -4,7 +4,6 @@ package com.feth.mailfred.servlets;
 import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.scheduler.Scheduler;
-import com.feth.mailfred.util.Utils;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
@@ -114,6 +113,7 @@ public class ScheduleServlet extends HttpServlet {
 
     private void scheduleMail(Date now, String userId, Scheduler scheduler, String mailId, Date scheduleAt, List<String> processingOptions) throws IOException {
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+        final boolean archive = processingOptions.contains(ProcessingOptions.ARCHIVE_AFTER_SCHEDULING);
         final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
         final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
 
@@ -125,7 +125,6 @@ public class ScheduleServlet extends HttpServlet {
             unprocessedSameScheduledMails.add(scheduledMail);
             ds.put(unprocessedSameScheduledMails);
 
-            final boolean archive = processingOptions.contains(ProcessingOptions.ARCHIVE_AFTER_SCHEDULING);
             scheduler.schedule(mailId, archive);
             txn.commit();
         } finally {

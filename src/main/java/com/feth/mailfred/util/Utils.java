@@ -33,7 +33,11 @@ public class Utils {
     }
 
     private static GoogleClientSecrets getClientCredential() throws IOException {
-        return GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(Utils.class.getResourceAsStream("/client_secret.json")));
+        return GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(Utils.class.getResourceAsStream(getCredentialPath())));
+    }
+
+    private static String getCredentialPath() {
+        return Utils.isDev() ? "/client_secret_dev.json" : "/client_secret_dev.json";
     }
 
     public static GoogleAuthorizationCodeFlow newFlow(final String userId) throws IOException {

@@ -37,7 +37,7 @@ public class Utils {
     }
 
     private static String getCredentialPath() {
-        return Utils.isDev() ? "/client_secret_dev.json" : "/client_secret_dev.json";
+        return Utils.isDev() ? "/client_secret_dev.json" : "/client_secret.json";
     }
 
     public static GoogleAuthorizationCodeFlow newFlow(final String userId) throws IOException {

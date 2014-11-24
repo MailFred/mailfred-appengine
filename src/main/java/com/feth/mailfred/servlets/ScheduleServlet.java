@@ -37,6 +37,7 @@ public class ScheduleServlet extends HttpServlet {
     public static final String ERROR_CODE_INVALID_SCHEDULE_TIME = "InvalidScheduleTime";
     public static final String ERROR_CODE_NO_SCHEDULE_TIME = "NoScheduleTime";
     public static final String ERROR_CODE_STORING_FAILED = "StoringFailed";
+    public static final String ERROR_CODE_AUTH_MISSING = "authMissing";
 
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -45,14 +46,12 @@ public class ScheduleServlet extends HttpServlet {
 
     @Override
     public void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-
         schedule(req, resp);
     }
 
     @Override
     public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
             throws IOException {
-
         schedule(req, resp);
     }
 
@@ -67,16 +66,16 @@ public class ScheduleServlet extends HttpServlet {
         final JSONObject response = new JSONObject();
         response.put("success", false);
         response.put("error", "Unknown error occurred");
-        resp.setStatus(400);
         try {
-            log.info("Getting mailId from the request");
-            final String mailId = getMailIdFromRequest(req, scheduler);
-
             log.info("Getting schedule date from the request");
             final Date scheduleAt = getScheduledAtFromRequest(req, now);
 
             log.info("Getting processing options from the request");
             final List<String> processingOptions = getProcessingOptionsFromRequest(req);
+
+            // this is more expensive, so do it last
+            log.info("Getting mailId from the request");
+            final String mailId = getMailIdFromRequest(req, scheduler);
 
             log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s", userId, mailId, scheduleAt, processingOptions));
 
@@ -84,7 +83,6 @@ public class ScheduleServlet extends HttpServlet {
 
             response.put("success", true);
             response.put("error", false);
-            resp.setStatus(200);
         } catch (final MessageIdInvalidException e) {
             final JSONObject error = new JSONObject();
             error.put("code", ERROR_CODE_MESSAGE_ID_INVALID);
@@ -109,9 +107,10 @@ public class ScheduleServlet extends HttpServlet {
             final GoogleJsonError details = e.getDetails();
             final GoogleJsonError.ErrorInfo errorInfo = details.getErrors().get(0);
             final String reason = errorInfo.getReason();
-            if (details.getCode() == 401 && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
-                response.put("error", "authMissing");
-                resp.setStatus(401);
+            if (details.getCode() == HttpServletResponse.SC_UNAUTHORIZED && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
+                final JSONObject error = new JSONObject();
+                error.put("code", ERROR_CODE_AUTH_MISSING);
+                response.put("error", error);
             }
         } catch (StoringFailedException e) {
             final JSONObject error = new JSONObject();
@@ -149,8 +148,14 @@ public class ScheduleServlet extends HttpServlet {
             log.info(String.format("Given mailId '%s' is not well-formed", mailId));
             throw new MessageIdInvalidException();
         }
-        if (scheduler.getMessageByMailId(mailId) == null) {
-            throw new MessageNotFoundException();
+        try {
+            scheduler.getMessageByMailId(mailId);
+        } catch(GoogleJsonResponseException e) {
+            if(e.getDetails().getCode() == HttpServletResponse.SC_NOT_FOUND) {
+                throw new MessageNotFoundException();
+            } else {
+                throw e;
+            }
         }
         return mailId;
     }

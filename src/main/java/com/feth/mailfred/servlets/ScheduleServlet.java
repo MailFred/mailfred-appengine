@@ -3,8 +3,10 @@ package com.feth.mailfred.servlets;
 
 import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
+import com.feth.mailfred.exceptions.*;
 import com.feth.mailfred.scheduler.Scheduler;
 import com.google.api.client.googleapis.json.GoogleJsonError;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
@@ -58,7 +60,7 @@ public class ScheduleServlet extends HttpServlet {
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
         response.put("success", false);
-        response.put("error", "unknown");
+        response.put("error", "Unknown error occurred");
         try {
             log.info("Getting mailId from the request");
             final String mailId = getMailIdFromRequest(req, scheduler);
@@ -75,51 +77,76 @@ public class ScheduleServlet extends HttpServlet {
 
             response.put("success", true);
             response.put("error", false);
-        } catch (final com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
+        } catch (final MessageIdInvalidException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "MessageIdInvalid");
+            response.put("error", error);
+        } catch (final MessageNotFoundException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "MessageIdInvalid");
+            response.put("error", error);
+        } catch (final NoActionSpecifiedException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "NoActionSpecified");
+            response.put("error", error);
+        } catch (InvalidScheduleTimeException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "InvalidScheduleTime");
+            response.put("error", error);
+        } catch (NoScheduleTimeException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "NoScheduleTime");
+            response.put("error", error);
+        } catch (final GoogleJsonResponseException e) {
             final GoogleJsonError details = e.getDetails();
             final GoogleJsonError.ErrorInfo errorInfo = details.getErrors().get(0);
             final String reason = errorInfo.getReason();
             if (details.getCode() == 401 && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
                 response.put("error", "authMissing");
             }
-        } catch (final Exception e) {
+        } catch (StoringFailedException e) {
+            final JSONObject error = new JSONObject();
+            error.put("code", "StoringFailed");
+            response.put("error", error);
+        } catch (final Throwable e) {
             log.severe(e.getMessage());
             e.printStackTrace();
         }
         response.write(resp.getWriter());
     }
 
-    private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) {
+    private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) throws NoActionSpecifiedException {
         final List<String> processingOptions = getTheProcessingOptions(req);
         if (!processingOptions.contains(ProcessingOptions.MARK_UNREAD) &&
                 !processingOptions.contains(ProcessingOptions.MOVE_TO_INBOX) &&
                 !processingOptions.contains(ProcessingOptions.STAR)
                 ) {
-            throw new IllegalArgumentException("There must be at least one processing option enabled");
+            throw new NoActionSpecifiedException("There must be at least one processing option enabled");
         }
         return processingOptions;
     }
 
-    private Date getScheduledAtFromRequest(HttpServletRequest req, Date now) {
+    private Date getScheduledAtFromRequest(HttpServletRequest req, Date now) throws InvalidScheduleTimeException, NoScheduleTimeException {
         final Long when = getWhenTheMailShouldBeScheduled(req, now);
         if (when == null) {
-            throw new IllegalArgumentException("Schedule time must be given in a proper format");
+            throw new InvalidScheduleTimeException("Schedule time must be given in a proper format");
         }
         return new Date(when);
     }
 
-    private String getMailIdFromRequest(final HttpServletRequest req, final Scheduler scheduler) throws IOException {
+    private String getMailIdFromRequest(final HttpServletRequest req, final Scheduler scheduler) throws IOException, MessageNotFoundException, MessageIdInvalidException {
         final String mailId = req.getParameter(PARAMETER_MESSAGE_ID);
         if (!Scheduler.isValidMessageId(mailId)) {
-            throw new IllegalArgumentException(String.format("Given mailId '%s' is not well-formed", mailId));
+            log.info(String.format("Given mailId '%s' is not well-formed", mailId));
+            throw new MessageIdInvalidException();
         }
         if (scheduler.getMessageByMailId(mailId) == null) {
-            throw new IllegalArgumentException("Given mailId could not be found");
+            throw new MessageNotFoundException();
         }
         return mailId;
     }
 
-    private void scheduleMail(Date now, String userId, Scheduler scheduler, String mailId, Date scheduleAt, List<String> processingOptions) throws IOException {
+    private void scheduleMail(Date now, String userId, Scheduler scheduler, String mailId, Date scheduleAt, List<String> processingOptions) throws IOException, StoringFailedException {
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
         final boolean archive = processingOptions.contains(ProcessingOptions.ARCHIVE_AFTER_SCHEDULING);
         final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
@@ -135,6 +162,8 @@ public class ScheduleServlet extends HttpServlet {
 
             scheduler.schedule(mailId, archive);
             txn.commit();
+        } catch (IOException e) {
+            throw new StoringFailedException();
         } finally {
             if (txn.isActive()) {
                 txn.rollback();
@@ -205,22 +234,24 @@ public class ScheduleServlet extends HttpServlet {
      * @param now the current date - we need this in case we got a delta request
      * @return a unix timestamp
      */
-    private Long getWhenTheMailShouldBeScheduled(final HttpServletRequest req, final Date now) {
-        Long when = null;
+    private Long getWhenTheMailShouldBeScheduled(final HttpServletRequest req, final Date now) throws NoScheduleTimeException {
         String whenParam = req.getParameter(PARAMETER_WHEN);
-        if (whenParam != null && !whenParam.trim().equals("")) {
-            final boolean isDelta = whenParam.startsWith(PARAMETER_WHEN_VALUE_DELTA_PREFIX);
+        if (whenParam == null || whenParam.trim().equals("")) {
+            throw new NoScheduleTimeException();
+        }
+
+        Long when = null;
+        final boolean isDelta = whenParam.startsWith(PARAMETER_WHEN_VALUE_DELTA_PREFIX);
+        if (isDelta) {
+            whenParam = whenParam.substring(PARAMETER_WHEN_VALUE_DELTA_PREFIX.length());
+        }
+        try {
+            when = Long.parseLong(whenParam);
             if (isDelta) {
-                whenParam = whenParam.substring(PARAMETER_WHEN_VALUE_DELTA_PREFIX.length());
+                when += now.getTime();
             }
-            try {
-                when = Long.parseLong(whenParam);
-                if (isDelta) {
-                    when += now.getTime();
-                }
-            } catch (final NumberFormatException nfe) {
-                // we couldn't parse the given delta
-            }
+        } catch (final NumberFormatException nfe) {
+            // we couldn't parse the given delta
         }
         return when;
     }

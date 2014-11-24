@@ -10,5 +10,6 @@
     <static-files>
         <include path="/favicon.ico" />
         <include path="/robots.txt" />
+        <include path="/logo_horizontal_300x47.png" />
     </static-files>
 </appengine-web-app>

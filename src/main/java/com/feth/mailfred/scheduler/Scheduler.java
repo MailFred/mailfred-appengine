@@ -5,7 +5,6 @@ import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Label;
 import com.google.api.services.gmail.model.ListLabelsResponse;
@@ -66,15 +65,11 @@ public class Scheduler {
             mmr.setRemoveLabelIds(Collections.singletonList(LABEL_ID_INBOX));
         }
 
-        gmail().users().messages().modify(me(), mailId, mmr)
-
-                .execute();
+        gmail().users().messages().modify(me(), mailId, mmr).execute();
     }
 
     public Message getMessageByMailId(final String mailId) throws IOException {
-        return gmail().users().messages().get(me(), mailId)
-
-                .execute();
+        return gmail().users().messages().get(me(), mailId).execute();
     }
 
     /**
@@ -167,9 +162,7 @@ public class Scheduler {
                 .setAddLabelIds(addLabelIds)
                 .setRemoveLabelIds(Collections.singletonList(getScheduledLabel().getId()));
 
-        gmail().users().messages().modify(me(), mailId, mmr)
-
-                .execute();
+        gmail().users().messages().modify(me(), mailId, mmr).execute();
     }
 
     private boolean isLastMessageInThread(Message message) throws IOException {

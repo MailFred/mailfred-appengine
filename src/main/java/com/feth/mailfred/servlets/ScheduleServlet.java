@@ -4,6 +4,7 @@ package com.feth.mailfred.servlets;
 import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.scheduler.Scheduler;
+import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
@@ -56,6 +57,8 @@ public class ScheduleServlet extends HttpServlet {
         resp.addHeader("Access-Control-Allow-Origin", "*");
         resp.setContentType("application/json");
         final JSONObject response = new JSONObject();
+        response.put("success", false);
+        response.put("error", "unknown");
         try {
             log.info("Getting mailId from the request");
             final String mailId = getMailIdFromRequest(req, scheduler);
@@ -72,11 +75,16 @@ public class ScheduleServlet extends HttpServlet {
 
             response.put("success", true);
             response.put("error", false);
+        } catch (final com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
+            final GoogleJsonError details = e.getDetails();
+            final GoogleJsonError.ErrorInfo errorInfo = details.getErrors().get(0);
+            final String reason = errorInfo.getReason();
+            if (details.getCode() == 401 && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
+                response.put("error", "authMissing");
+            }
         } catch (final Exception e) {
-            response.put("success", false);
             log.severe(e.getMessage());
             e.printStackTrace();
-            response.put("error", "Something went wrong");
         }
         response.write(resp.getWriter());
     }

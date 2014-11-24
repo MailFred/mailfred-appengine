@@ -13,14 +13,22 @@ import java.io.IOException;
 
 public class SetupServlet extends AbstractAppEngineAuthorizationCodeServlet {
 
+    public static final String PARAMETER_FORMAT = "format";
+    public static final String FORMAT_JSON = "json";
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        response.setContentType("application/json");
-        final JSONObject obj = new JSONObject();
-        obj.put("authorized", true);
-        obj.write(response.getWriter());
+        if (FORMAT_JSON.equals(request.getParameter(PARAMETER_FORMAT))) {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setContentType("application/json");
+            final JSONObject obj = new JSONObject();
+            obj.put("success", true);
+            obj.put("error", false);
+            obj.write(response.getWriter());
+        } else {
+            response.sendRedirect("/");
+        }
     }
 
     @Override

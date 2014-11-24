@@ -32,6 +32,12 @@ public class ScheduleServlet extends HttpServlet {
     public static final String PARAMETER_WHEN_VALUE_DELTA_PREFIX = "delta:";
     public static final String PARAMETER_MESSAGE_ID = "msgId";
 
+    public static final String ERROR_CODE_MESSAGE_ID_INVALID = "MessageIdInvalid";
+    public static final String ERROR_CODE_NO_ACTION_SPECIFIED = "NoActionSpecified";
+    public static final String ERROR_CODE_INVALID_SCHEDULE_TIME = "InvalidScheduleTime";
+    public static final String ERROR_CODE_NO_SCHEDULE_TIME = "NoScheduleTime";
+    public static final String ERROR_CODE_STORING_FAILED = "StoringFailed";
+
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.addHeader("Access-Control-Allow-Origin", "*");
@@ -61,6 +67,7 @@ public class ScheduleServlet extends HttpServlet {
         final JSONObject response = new JSONObject();
         response.put("success", false);
         response.put("error", "Unknown error occurred");
+        resp.setStatus(400);
         try {
             log.info("Getting mailId from the request");
             final String mailId = getMailIdFromRequest(req, scheduler);
@@ -77,25 +84,26 @@ public class ScheduleServlet extends HttpServlet {
 
             response.put("success", true);
             response.put("error", false);
+            resp.setStatus(200);
         } catch (final MessageIdInvalidException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "MessageIdInvalid");
+            error.put("code", ERROR_CODE_MESSAGE_ID_INVALID);
             response.put("error", error);
         } catch (final MessageNotFoundException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "MessageIdInvalid");
+            error.put("code", ERROR_CODE_MESSAGE_ID_INVALID);
             response.put("error", error);
         } catch (final NoActionSpecifiedException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "NoActionSpecified");
+            error.put("code", ERROR_CODE_NO_ACTION_SPECIFIED);
             response.put("error", error);
         } catch (InvalidScheduleTimeException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "InvalidScheduleTime");
+            error.put("code", ERROR_CODE_INVALID_SCHEDULE_TIME);
             response.put("error", error);
         } catch (NoScheduleTimeException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "NoScheduleTime");
+            error.put("code", ERROR_CODE_NO_SCHEDULE_TIME);
             response.put("error", error);
         } catch (final GoogleJsonResponseException e) {
             final GoogleJsonError details = e.getDetails();
@@ -103,10 +111,11 @@ public class ScheduleServlet extends HttpServlet {
             final String reason = errorInfo.getReason();
             if (details.getCode() == 401 && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
                 response.put("error", "authMissing");
+                resp.setStatus(401);
             }
         } catch (StoringFailedException e) {
             final JSONObject error = new JSONObject();
-            error.put("code", "StoringFailed");
+            error.put("code", ERROR_CODE_STORING_FAILED);
             response.put("error", error);
         } catch (final Throwable e) {
             log.severe(e.getMessage());

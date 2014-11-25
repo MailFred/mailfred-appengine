@@ -139,7 +139,7 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     private List<String> getProcessingOptionsFromRequest(HttpServletRequest req) throws NoActionSpecifiedException {
-        final List<String> processingOptions = getTheProcessingOptions(req);
+        final List<String> processingOptions = getTheProcessingOptionsFromRequest(req);
         if (!processingOptions.contains(ProcessingOptions.MARK_UNREAD) &&
                 !processingOptions.contains(ProcessingOptions.MOVE_TO_INBOX) &&
                 !processingOptions.contains(ProcessingOptions.STAR)
@@ -150,7 +150,7 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     private Date getScheduledAtFromRequest(HttpServletRequest req, Date now) throws InvalidScheduleTimeException, NoScheduleTimeException {
-        final Long when = getWhenTheMailShouldBeScheduled(req, now);
+        final Long when = getWhenTheMailShouldBeScheduledFromRequest(req, now);
         if (when == null) {
             throw new InvalidScheduleTimeException("Schedule time must be given in a proper format");
         }
@@ -248,7 +248,7 @@ public class ScheduleServlet extends HttpServlet {
         return pq.asList(FetchOptions.Builder.withDefaults());
     }
 
-    private List<String> getTheProcessingOptions(final HttpServletRequest req) {
+    private List<String> getTheProcessingOptionsFromRequest(final HttpServletRequest req) {
         final List<String> options = new ArrayList<String>(2);
         for (final String key : ProcessingOptions.VALID_PROCESS_OPTION_KEYS) {
             if ("true".equals(req.getParameter(key))) {
@@ -263,7 +263,7 @@ public class ScheduleServlet extends HttpServlet {
      * @param now the current date - we need this in case we got a delta request
      * @return a unix timestamp
      */
-    private Long getWhenTheMailShouldBeScheduled(final HttpServletRequest req, final Date now) throws NoScheduleTimeException {
+    private Long getWhenTheMailShouldBeScheduledFromRequest(final HttpServletRequest req, final Date now) throws NoScheduleTimeException {
         String whenParam = req.getParameter(PARAMETER_WHEN);
         if (whenParam == null || whenParam.trim().equals("")) {
             throw new NoScheduleTimeException();

@@ -150,8 +150,8 @@ public class ScheduleServlet extends HttpServlet {
         }
         try {
             scheduler.getMessageByMailId(mailId);
-        } catch(GoogleJsonResponseException e) {
-            if(e.getDetails().getCode() == HttpServletResponse.SC_NOT_FOUND) {
+        } catch (GoogleJsonResponseException e) {
+            if (e.getDetails().getCode() == HttpServletResponse.SC_NOT_FOUND) {
                 throw new MessageNotFoundException();
             } else {
                 throw e;

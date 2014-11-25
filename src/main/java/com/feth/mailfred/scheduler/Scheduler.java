@@ -60,6 +60,10 @@ public class Scheduler {
         return labelCache;
     }
 
+    private boolean shouldBePretty() {
+        return Utils.isDev();
+    }
+
     private String getCurrentUserId() {
         return this.currentUserId;
     }
@@ -77,12 +81,14 @@ public class Scheduler {
 
         gmail().users().messages().modify(me(), mailId, mmr)
                 .setQuotaUser(getCurrentUserId())
+                .setPrettyPrint(shouldBePretty())
                 .execute();
     }
 
     public Message getMessageByMailId(final String mailId) throws IOException {
         return gmail().users().messages().get(me(), mailId)
                 .setQuotaUser(getCurrentUserId())
+                .setPrettyPrint(shouldBePretty())
                 .execute();
     }
 
@@ -130,6 +136,7 @@ public class Scheduler {
         newBaseLabel.setMessageListVisibility("show");
         newBaseLabel.setName(name);
         final Label newLabel = gmail().users().labels().create(me(), newBaseLabel)
+                .setPrettyPrint(shouldBePretty())
                 .setQuotaUser(getCurrentUserId())
                 .execute();
         if (labelCache != null) {
@@ -178,12 +185,14 @@ public class Scheduler {
 
         gmail().users().messages().modify(me(), mailId, mmr)
                 .setQuotaUser(getCurrentUserId())
+                .setPrettyPrint(shouldBePretty())
                 .execute();
     }
 
     private boolean isLastMessageInThread(Message message) throws IOException {
         final com.google.api.services.gmail.model.Thread thread = gmail().users().threads().get(me(), message.getThreadId())
                 .setQuotaUser(getCurrentUserId())
+                .setPrettyPrint(shouldBePretty())
                 .execute();
         final List<Message> threadMessages = thread.getMessages();
         return threadMessages.indexOf(message) == threadMessages.size() - 1;
@@ -199,6 +208,7 @@ public class Scheduler {
                 .list(me())
                 .setLabelIds(Collections.singletonList(getScheduledLabel().getId()))
                 .setQuotaUser(getCurrentUserId())
+                .setPrettyPrint(shouldBePretty())
                 .execute().getMessages();
 
         if (messagesInOutbox.size() > 0) {
@@ -228,6 +238,7 @@ public class Scheduler {
                             .setRemoveLabelIds(Collections.singletonList(getScheduledLabel().getId()));
                     gmail().users().messages().modify(me(), messageInOutbox.getId(), mmr)
                             .setQuotaUser(getCurrentUserId())
+                            .setPrettyPrint(shouldBePretty())
                             .queue(br, bc);
                 }
             }

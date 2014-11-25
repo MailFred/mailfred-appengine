@@ -5,6 +5,7 @@ import com.feth.mailfred.EntityConstants;
 import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.exceptions.*;
 import com.feth.mailfred.scheduler.Scheduler;
+import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.appengine.api.datastore.*;
@@ -107,10 +108,24 @@ public class ScheduleServlet extends HttpServlet {
             final GoogleJsonError details = e.getDetails();
             final GoogleJsonError.ErrorInfo errorInfo = details.getErrors().get(0);
             final String reason = errorInfo.getReason();
-            if (details.getCode() == HttpServletResponse.SC_UNAUTHORIZED && errorInfo.getLocation().equals("Authorization") && (reason.equals("required") || reason.equals("authError"))) {
+            if (details.getCode() == HttpServletResponse.SC_UNAUTHORIZED &&
+                    errorInfo.getLocation().equals("Authorization") &&
+                    (reason.equals("required") || reason.equals("authError"))) {
                 final JSONObject error = new JSONObject();
                 error.put("code", ERROR_CODE_AUTH_MISSING);
                 response.put("error", error);
+            } else {
+                log.severe(e.getMessage());
+                e.printStackTrace();
+            }
+        } catch (TokenResponseException e) {
+            if ("invalid_grant".equals(e.getDetails().getError())) {
+                final JSONObject error = new JSONObject();
+                error.put("code", ERROR_CODE_AUTH_MISSING);
+                response.put("error", error);
+            } else {
+                log.severe(e.getMessage());
+                e.printStackTrace();
             }
         } catch (StoringFailedException e) {
             final JSONObject error = new JSONObject();

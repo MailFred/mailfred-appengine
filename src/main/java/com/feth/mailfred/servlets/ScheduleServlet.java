@@ -1,14 +1,13 @@
 package com.feth.mailfred.servlets;
 
 
-import com.feth.mailfred.EntityConstants;
-import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
+import com.feth.mailfred.entities.EntityConstants.ScheduledMail.Property.ProcessingOptions;
+import com.feth.mailfred.entities.EntityHelper;
 import com.feth.mailfred.exceptions.*;
 import com.feth.mailfred.scheduler.Scheduler;
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.users.UserServiceFactory;
 import org.json.JSONObject;
 
@@ -21,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
-
-import static com.feth.mailfred.EntityConstants.ScheduledMail.Property;
 
 
 public class ScheduleServlet extends HttpServlet {
@@ -80,7 +77,7 @@ public class ScheduleServlet extends HttpServlet {
 
             log.info(String.format("User %s told us to schedule mail with ID %s at %s with the following options: %s", userId, mailId, scheduleAt, processingOptions));
 
-            scheduleMail(now, userId, scheduler, mailId, scheduleAt, processingOptions);
+            EntityHelper.scheduleMail(now, userId, scheduler, mailId, scheduleAt, processingOptions);
 
             response.put("success", true);
             response.put("error", false);
@@ -173,79 +170,6 @@ public class ScheduleServlet extends HttpServlet {
             }
         }
         return mailId;
-    }
-
-    private void scheduleMail(Date now, String userId, Scheduler scheduler, String mailId, Date scheduleAt, List<String> processingOptions) throws IOException, StoringFailedException {
-        final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-        final boolean archive = processingOptions.contains(ProcessingOptions.ARCHIVE_AFTER_SCHEDULING);
-        final List<Entity> unprocessedSameScheduledMails = getUnprocessedScheduledMailsFromSameUserWithSameMailId(userId, mailId, ds);
-        final Entity scheduledMail = createNewScheduledMailEntity(userId, mailId, scheduleAt, processingOptions, now);
-
-        final TransactionOptions options = TransactionOptions.Builder.withXG(true);
-        final Transaction txn = ds.beginTransaction(options);
-
-        try {
-            markAllPreviouslyScheduledMailsAsCancelled(unprocessedSameScheduledMails, now);
-            unprocessedSameScheduledMails.add(scheduledMail);
-            ds.put(unprocessedSameScheduledMails);
-
-            scheduler.schedule(mailId, archive);
-            txn.commit();
-        } catch (IOException e) {
-            throw new StoringFailedException();
-        } finally {
-            if (txn.isActive()) {
-                txn.rollback();
-            }
-        }
-    }
-
-    private Entity createNewScheduledMailEntity(String userId, String mailId, Date scheduledFor, List<String> processingOptions, Date scheduledAt) {
-        final Entity scheduledMail = new Entity(EntityConstants.ScheduledMail.NAME);
-        scheduledMail.setProperty(Property.USER_ID, userId);
-        scheduledMail.setProperty(Property.MAIL_ID, mailId);
-        scheduledMail.setProperty(Property.SCHEDULED_AT, scheduledAt);
-        scheduledMail.setProperty(Property.SCHEDULED_FOR, scheduledFor);
-        scheduledMail.setProperty(Property.PROCESSED_AT, null);
-        scheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, false);
-        scheduledMail.setProperty(Property.PROCESS_STATUS, null);
-        scheduledMail.setUnindexedProperty(Property.PROCESSING_OPTIONS, processingOptions);
-        return scheduledMail;
-    }
-
-    private void markAllPreviouslyScheduledMailsAsCancelled(final List<Entity> unprocessedSameScheduledMails, final Date now) {
-        for (final Entity sameScheduledMail : unprocessedSameScheduledMails) {
-            sameScheduledMail.setProperty(Property.HAS_BEEN_PROCESSED, true);
-            sameScheduledMail.setProperty(Property.PROCESSED_AT, now);
-            sameScheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.CANCELED);
-        }
-    }
-
-    private List<Entity> getUnprocessedScheduledMailsFromSameUserWithSameMailId(final String userId, final String mailId, final DatastoreService ds) {
-        final Query.Filter mailIdFilter = new Query.FilterPredicate(
-                Property.MAIL_ID,
-                Query.FilterOperator.EQUAL,
-                mailId
-        );
-
-        final Query.Filter userIdFilter = new Query.FilterPredicate(
-                Property.USER_ID,
-                Query.FilterOperator.EQUAL,
-                userId
-        );
-
-        final Query.Filter currentUserSameEmailButUnprocessedFilter =
-                Query.CompositeFilterOperator.and(
-                        userIdFilter,
-                        mailIdFilter,
-                        ProcessServlet.UNPROCESSED_SCHEDULED_MAIL_FILTER
-                );
-
-        final Query q = new Query(EntityConstants.ScheduledMail.NAME)
-                .setFilter(currentUserSameEmailButUnprocessedFilter);
-
-        final PreparedQuery pq = ds.prepare(q);
-        return pq.asList(FetchOptions.Builder.withDefaults());
     }
 
     private List<String> getTheProcessingOptionsFromRequest(final HttpServletRequest req) {

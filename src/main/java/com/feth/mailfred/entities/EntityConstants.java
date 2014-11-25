@@ -1,4 +1,4 @@
-package com.feth.mailfred;
+package com.feth.mailfred.entities;
 
 
 public abstract class EntityConstants {

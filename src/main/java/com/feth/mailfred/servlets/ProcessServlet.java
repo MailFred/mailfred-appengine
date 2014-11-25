@@ -1,13 +1,14 @@
 package com.feth.mailfred.servlets;
 
-import com.feth.mailfred.EntityConstants;
+import com.feth.mailfred.entities.EntityHelper;
 import com.feth.mailfred.scheduler.Scheduler;
 import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
-import com.google.appengine.api.datastore.*;
-import com.google.appengine.api.datastore.Query.Filter;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -17,17 +18,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static com.feth.mailfred.EntityConstants.ScheduledMail.Property;
+import static com.feth.mailfred.entities.EntityConstants.ScheduledMail.Property;
 
 public class ProcessServlet extends HttpServlet {
 
     private static final Logger log = Logger.getLogger(ProcessServlet.class.getName());
-
-    public static final Filter UNPROCESSED_SCHEDULED_MAIL_FILTER = new Query.FilterPredicate(
-            Property.HAS_BEEN_PROCESSED,
-            Query.FilterOperator.EQUAL,
-            false
-    );
 
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -37,7 +32,7 @@ public class ProcessServlet extends HttpServlet {
         final Date processingRunStart = new Date();
         final DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 
-        final Iterable<Entity> toBeProcessedScheduledMails = getToBeProcessedScheduledMails(ds, processingRunStart);
+        final Iterable<Entity> toBeProcessedScheduledMails = EntityHelper.getToBeProcessedScheduledMails(ds, processingRunStart);
         int processed = 0;
         for (final Entity scheduledMail : toBeProcessedScheduledMails) {
             processed++;
@@ -85,20 +80,4 @@ public class ProcessServlet extends HttpServlet {
         log.exiting(ProcessServlet.class.getName(), "doGet");
     }
 
-    private Iterable<Entity> getToBeProcessedScheduledMails(DatastoreService ds, Date processingRunStart) {
-        final Filter scheduledForNowOrThePastFilter = new Query.FilterPredicate(
-                Property.SCHEDULED_FOR,
-                Query.FilterOperator.LESS_THAN_OR_EQUAL,
-                processingRunStart
-        );
-
-        final Filter scheduledForNowOrThePastAndUnprocessedFilter = Query.CompositeFilterOperator.and(
-                scheduledForNowOrThePastFilter,
-                UNPROCESSED_SCHEDULED_MAIL_FILTER
-        );
-
-        final Query q = new Query(EntityConstants.ScheduledMail.NAME).setFilter(scheduledForNowOrThePastAndUnprocessedFilter);
-        final PreparedQuery pq = ds.prepare(q);
-        return pq.asIterable();
-    }
 }

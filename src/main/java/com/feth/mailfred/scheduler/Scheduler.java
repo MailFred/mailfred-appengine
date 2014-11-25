@@ -1,10 +1,14 @@
 package com.feth.mailfred.scheduler;
 
-import com.feth.mailfred.EntityConstants.ScheduledMail.Property.ProcessingOptions;
+import com.feth.mailfred.entities.EntityConstants.ScheduledMail.Property.ProcessingOptions;
 import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
+import com.google.api.client.googleapis.batch.BatchRequest;
+import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
+import com.google.api.client.googleapis.json.GoogleJsonError;
+import com.google.api.client.http.HttpHeaders;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Label;
 import com.google.api.services.gmail.model.ListLabelsResponse;
@@ -187,5 +191,51 @@ public class Scheduler {
 
     private boolean messageHasScheduledLabel(Message message) throws IOException {
         return message.getLabelIds().contains(getScheduledLabel().getId());
+    }
+
+    public void reboxUnscheduledMessagesWithOutboxLabel(final List<String> scheduledMailIds) throws IOException {
+
+        final List<Message> messagesInOutbox = gmail().users().messages()
+                .list(me())
+                .setLabelIds(Collections.singletonList(getScheduledLabel().getId()))
+                .setQuotaUser(getCurrentUserId())
+                .execute().getMessages();
+
+        if (messagesInOutbox.size() > 0) {
+            log.info("Found outbox messages");
+            final BatchRequest br = gmail().batch();
+            final JsonBatchCallback<Message> bc = new JsonBatchCallback<Message>() {
+
+                @Override
+                public void onSuccess(Message message, HttpHeaders responseHeaders)
+                        throws IOException {
+                    log.info(String.format("Moved message '%s' for user %s back into INBOX", message.getId(), getCurrentUserId()));
+                }
+
+                @Override
+                public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders)
+                        throws IOException {
+                    log.severe(e.getMessage());
+                }
+            };
+            int messagesToBeProcessed = 0;
+            for (final Message messageInOutbox : messagesInOutbox) {
+                if (!scheduledMailIds.contains(messageInOutbox.getId())) {
+                    // we found a message with the label that is not scheduled
+                    messagesToBeProcessed++;
+                    final ModifyMessageRequest mmr = new ModifyMessageRequest()
+                            .setAddLabelIds(Collections.singletonList(LABEL_ID_INBOX))
+                            .setRemoveLabelIds(Collections.singletonList(getScheduledLabel().getId()));
+                    gmail().users().messages().modify(me(), messageInOutbox.getId(), mmr)
+                            .setQuotaUser(getCurrentUserId())
+                            .queue(br, bc);
+                }
+            }
+
+            if (messagesToBeProcessed > 0) {
+                log.info(String.format("Sending %d messages back into inbox", messagesToBeProcessed));
+                br.execute();
+            }
+        }
     }
 }

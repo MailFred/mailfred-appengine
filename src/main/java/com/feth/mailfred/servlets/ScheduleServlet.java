@@ -160,15 +160,7 @@ public class ScheduleServlet extends HttpServlet {
             log.info(String.format("Given mailId '%s' is not well-formed", mailId));
             throw new MessageIdInvalidException();
         }
-        try {
-            scheduler.getMessageByMailId(mailId);
-        } catch (GoogleJsonResponseException e) {
-            if (e.getDetails().getCode() == HttpServletResponse.SC_NOT_FOUND) {
-                throw new MessageNotFoundException();
-            } else {
-                throw e;
-            }
-        }
+        scheduler.getMessageByMailId(mailId);
         return mailId;
     }
 

@@ -1,13 +1,14 @@
 package com.feth.mailfred.scheduler;
 
 import com.feth.mailfred.entities.EntityConstants.ScheduledMail.Property.ProcessingOptions;
-import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
+import com.feth.mailfred.exceptions.MessageNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.googleapis.json.GoogleJsonError;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Label;
@@ -15,6 +16,7 @@ import com.google.api.services.gmail.model.ListLabelsResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.ModifyMessageRequest;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,11 +87,19 @@ public class Scheduler {
                 .execute();
     }
 
-    public Message getMessageByMailId(final String mailId) throws IOException {
-        return gmail().users().messages().get(me(), mailId)
-                .setQuotaUser(getCurrentUserId())
-                .setPrettyPrint(shouldBePretty())
-                .execute();
+    public Message getMessageByMailId(final String mailId) throws IOException, MessageNotFoundException {
+        try {
+            return gmail().users().messages().get(me(), mailId)
+                    .setQuotaUser(getCurrentUserId())
+                    .setPrettyPrint(shouldBePretty())
+                    .execute();
+        } catch (GoogleJsonResponseException e) {
+            if (e.getDetails().getCode() == HttpServletResponse.SC_NOT_FOUND) {
+                throw new MessageNotFoundException();
+            } else {
+                throw e;
+            }
+        }
     }
 
     /**
@@ -148,13 +158,10 @@ public class Scheduler {
     public void process(final String mailId, final List<String> options) throws
             IOException,
             WasAnsweredButNoAnswerOptionWasGivenException,
-            MessageWasNotFoundException,
+            MessageNotFoundException,
             ScheduledLabelWasRemovedException {
 
         final Message messageToBeProcessed = getMessageByMailId(mailId);
-        if (messageToBeProcessed == null) {
-            throw new MessageWasNotFoundException();
-        }
         final boolean stillHasScheduledLabel = messageHasScheduledLabel(messageToBeProcessed);
         if (!stillHasScheduledLabel) {
             throw new ScheduledLabelWasRemovedException();

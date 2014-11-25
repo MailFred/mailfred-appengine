@@ -1,8 +1,8 @@
 package com.feth.mailfred.servlets;
 
 import com.feth.mailfred.entities.EntityHelper;
+import com.feth.mailfred.exceptions.MessageNotFoundException;
 import com.feth.mailfred.scheduler.Scheduler;
-import com.feth.mailfred.scheduler.exceptions.MessageWasNotFoundException;
 import com.feth.mailfred.scheduler.exceptions.ScheduledLabelWasRemovedException;
 import com.feth.mailfred.scheduler.exceptions.WasAnsweredButNoAnswerOptionWasGivenException;
 import com.feth.mailfred.util.Utils;
@@ -57,7 +57,7 @@ public class ProcessServlet extends HttpServlet {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.PROCESSED_CORRECTLY);
                 } catch (WasAnsweredButNoAnswerOptionWasGivenException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.ANSWERED);
-                } catch (MessageWasNotFoundException e) {
+                } catch (MessageNotFoundException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.NOT_FOUND);
                 } catch (ScheduledLabelWasRemovedException e) {
                     scheduledMail.setProperty(Property.PROCESS_STATUS, Property.ProcessStatus.OUTBOX_LABEL_REMOVED);

@@ -218,7 +218,7 @@ public class Scheduler {
                 .setPrettyPrint(shouldBePretty())
                 .execute().getMessages();
 
-        if (messagesInOutbox.size() > 0) {
+        if (messagesInOutbox != null && messagesInOutbox.size() > 0) {
             log.info("Found outbox messages");
             final BatchRequest br = gmail().batch();
             final JsonBatchCallback<Message> bc = new JsonBatchCallback<Message>() {

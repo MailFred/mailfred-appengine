@@ -256,8 +256,10 @@ public class Scheduler {
                     }
                 }
 
-                log.info(String.format("Sending %d messages back into inbox", messagesToBeProcessed));
-                br.execute();
+                if (messagesToBeProcessed > 0) {
+                    log.info(String.format("Sending %d messages back into inbox", messagesToBeProcessed));
+                    br.execute();
+                }
             }
         }
     }

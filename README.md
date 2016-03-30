@@ -1,0 +1,2 @@
+# MailFred server side component
+
